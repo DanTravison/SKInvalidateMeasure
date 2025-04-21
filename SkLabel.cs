@@ -226,7 +226,7 @@ internal class SkLabel : SKCanvasView
         BindingMode.OneWay,
         propertyChanged: (bindable, oldValue, newValue) =>
         {
-            ((SkLabel)bindable).InvalidateMeasure();
+            ((SkLabel)bindable).InvalidateTextMetrics();
         }
     );
 
@@ -255,40 +255,11 @@ internal class SkLabel : SKCanvasView
         BindingMode.OneWay,
         propertyChanged: (bindable, oldValue, newValue) =>
         {
-            ((SkLabel)bindable).InvalidateMeasure();
-        }
-    );
-
-    #endregion VerticalTextAlignment
-
-    #region Padding
-
-    /// <summary>
-    /// Gets or sets the <see cref="Text"/> font size.
-    /// </summary>
-    public Thickness Padding
-    {
-        get => (Thickness)GetValue(PaddingProperty);
-        set => SetValue(PaddingProperty, value);
-    }
-
-    /// <summary>
-    /// Provides a <see cref="BindableProperty"/> for the <see cref="Padding"/> property.
-    /// </summary>
-    public static readonly BindableProperty PaddingProperty = BindableProperty.Create
-    (
-        nameof(Padding),
-        typeof(Thickness),
-        typeof(SkLabel),
-        Thickness.Zero,
-        BindingMode.OneWay,
-        propertyChanged: (bindable, oldValue, newValue) =>
-        {
             ((SkLabel)bindable).InvalidateTextMetrics();
         }
     );
 
-    #endregion Padding
+    #endregion VerticalTextAlignment
 
     #region EnableWorkaround
 
@@ -319,23 +290,6 @@ internal class SkLabel : SKCanvasView
 
     #endregion ItemColor
 
-    void InvalidateTextMetrics()
-    {
-        Trace.WriteLine($"SKLabel.InvalidateTextMetrics FontSize={FontSize}");
-        if (EnableWorkaround && !string.IsNullOrEmpty(Text))
-        {
-            using (SKFont font = GetFont())
-            {
-                _metrics = new SKTextMetrics(Text, font);
-            }
-            HeightRequest = _metrics.Size.Height;
-            DesiredSize = new(_metrics.TextWidth, _metrics.Size.Height);
-            Trace.WriteLine($"SKLabel.InvalidateTextMetrics FontSize={FontSize}pts HeightRequest={HeightRequest}");
-        }
-        InvalidateMeasure();
-        InvalidateSurface();
-    }   
-    
     SKFont GetFont()
     {
         using (SKTypeface typeface = SKTypeface.FromFamilyName(FontFamily, FontAttributes.ToFontStyle()))
@@ -349,37 +303,41 @@ internal class SkLabel : SKCanvasView
         }
     }
 
-    protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
+    void InvalidateTextMetrics()
     {
-        Trace.WriteLine($"SKLabel.MeasureOverride FontSize={FontSize}pts");
+        Trace.WriteLine("********************");
         using (SKFont font = GetFont())
         {
-            SKPaint paint = new SKPaint()
+            using (SKPaint paint = new SKPaint() { IsAntialias = true })
             {
-                IsAntialias = true
-            };
-
-            _metrics = new SKTextMetrics(Text, font, paint);
-            float width = (float)Padding.HorizontalThickness + _metrics.TextWidth;
-            float height = (float)Padding.VerticalThickness + _metrics.Size.Height;
-            if (EnableWorkaround)
-            {
-                DesiredSize = new Size(width, height);
-                HeightRequest = height;
+                _metrics = new SKTextMetrics(Text, font, paint);
             }
-
-            Trace.WriteLine($"SKLabel.MeasureOverride DesiredWidth={DesiredSize.Width} DesiredHeight={DesiredSize.Height} HeightRequest={HeightRequest}");
-            Trace.WriteLine($"SKLabel.MeasureOverride Width={width} Height={height} HeightRequest={HeightRequest}");
-            return new Size(width, height);
         }
+
+        if (EnableWorkaround && !string.IsNullOrEmpty(Text))
+        {
+            WidthRequest = _metrics.TextWidth;
+            HeightRequest = _metrics.Size.Height;
+            Trace.WriteLine($"SKLabel.InvalidateTextMetrics FontSize={FontSize}pts WidthRequest={WidthRequest} HeightRequest={HeightRequest}");
+        }
+        InvalidateMeasure();
+        InvalidateSurface();
+    }
+
+    protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
+    {
+        Trace.WriteLine($"SKLabel.MeasureOverride FontSize={FontSize}pts EnableWorkaround={EnableWorkaround}");
+        Size size = new Size(_metrics.TextWidth, _metrics.Size.Height);
+        Trace.WriteLine($"SKLabel.MeasureOverride Width={size.Width} Height={size.Height}");
+        return size;
     }
 
     protected override void OnPaintSurface(SKPaintSurfaceEventArgs e)
     {
         SKCanvas canvas = e.Surface.Canvas;
-        Thickness padding = Padding;
-        Trace.WriteLine($"SKLabel.OnPaintSurface DesiredWidth={DesiredSize.Width} DesiredHeight={DesiredSize.Height} HeightRequest={HeightRequest}");
-        Trace.WriteLine($"SKLabel.OnPaintSurface Width={Width} Height={Height}");
+
+        Trace.WriteLine($"SKLabel.OnPaintSurface FontSize={FontSize}pts EnableWorkaround={EnableWorkaround}");
+        Trace.WriteLine($"SKLabel.OnPaintSurface Width={Width} Height={Height}  WidthRequest={WidthRequest} HeightRequest={HeightRequest}");
         Trace.WriteLine($"SKLabel.OnPaintSurface CanvasWidth={CanvasSize.Width} CanvasHeight={CanvasSize.Height}");
 
         if (BackgroundColor is not null && BackgroundColor != Colors.Transparent)
@@ -393,10 +351,10 @@ internal class SkLabel : SKCanvasView
 
         if (!string.IsNullOrEmpty(Text))
         {
-            float y = (float)padding.Top;
-            float x = (float)padding.Left;
-            float width = (float)(CanvasSize.Width - padding.HorizontalThickness);
-            float height = (float)(CanvasSize.Height - padding.VerticalThickness);
+            float y = 0;
+            float x = 0;
+            float width = CanvasSize.Width;
+            float height = CanvasSize.Height;
 
             using (SKPaint paint = new() {IsAntialias = true, Color = TextColor.ToSKColor()})
             {
@@ -404,10 +362,6 @@ internal class SkLabel : SKCanvasView
                 {
                     SKTextAlign verticalAlignment = VerticalTextAlignment.ToTextAlign();
                     SKTextAlign horizontalAlignment = HorizontalTextAlignment.ToTextAlign();
-                    if (_metrics is null)
-                    {
-                        _metrics = new SKTextMetrics(Text, font, paint);
-                    }
                     switch (verticalAlignment)
                     {
                         // TextAlignment.Center

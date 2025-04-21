@@ -6,10 +6,8 @@
              x:Class="SKInvalidateMeasure.MainPage"
              x:DataType="local:MainViewModel">
 
-    <Grid RowDefinitions="Auto, Auto, Auto"
-          RowSpacing="10"
-          >
-        
+    <VerticalStackLayout Spacing="10">
+       
         <HorizontalStackLayout HorizontalOptions="Center"
                                Spacing="20"
                                Grid.Row="0"
@@ -19,7 +17,7 @@
                     FontSize="20"
                     />
 
-            <Label Text="FontSize" 
+            <Label Text="{Binding FontSize, StringFormat='{0,3:###}'}" 
                    HorizontalOptions="Center"
                    VerticalOptions="Center" 
                    FontSize="20"
@@ -34,6 +32,7 @@
         <HorizontalStackLayout Spacing="5"
                                HorizontalOptions="Center"
                                Grid.Row="1">
+            
             <CheckBox IsChecked="{Binding EnableWorkaround}"
                       VerticalOptions="Center"
                       />
@@ -41,15 +40,38 @@
             <Label Text="Try Workaround"
                    VerticalOptions="Center"
                    FontSize="20"/>
+            
+        </HorizontalStackLayout>
+
+        <HorizontalStackLayout HorizontalOptions="Center">
+            <Label Text="Maui Label"
+                   FontSize="{Binding FontSize}"
+                   />
+        </HorizontalStackLayout>
+
+        <HorizontalStackLayout HorizontalOptions="Center">
+            <local:SkLabel FontSize="{Binding FontSize}"
+                           Text="SkLabel"
+                           TextColor="{AppThemeBinding Light={StaticResource PrimaryDarkText}, Dark={StaticResource White}}"
+                           EnableWorkaround="{Binding EnableWorkaround, Mode=OneWay}"
+                           />
         </HorizontalStackLayout>
 
         <local:SkLabel FontSize="{Binding FontSize}"
-                       Text="SampleText"
+                       Text="SkLabel"
                        TextColor="{AppThemeBinding Light={StaticResource PrimaryDarkText}, Dark={StaticResource White}}"
+                       EnableWorkaround="{Binding EnableWorkaround, Mode=OneWay}"
                        HorizontalOptions="Center"
-                       Grid.Row="2"
                        />
 
-    </Grid>
+        <Grid HorizontalOptions="Center">
+            <local:SkLabel FontSize="{Binding FontSize}"
+                           Text="SkLabel"
+                           TextColor="{AppThemeBinding Light={StaticResource PrimaryDarkText}, Dark={StaticResource White}}"
+                           EnableWorkaround="{Binding EnableWorkaround, Mode=OneWay}"
+                           HorizontalOptions="Center"
+                           />
+        </Grid>
 
+    </VerticalStackLayout>
 </ContentPage>
